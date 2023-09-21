@@ -1,8 +1,9 @@
 module github.com/junegunn/fzf
 
 require (
+	github.com/gabriel-vasile/mimetype v1.4.2
 	github.com/gdamore/tcell/v2 v2.5.4
-	github.com/mattn/go-isatty v0.0.17
+	github.com/mattn/go-isatty v0.0.19
 	github.com/mattn/go-runewidth v0.0.14
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/rivo/uniseg v0.4.4
@@ -12,7 +13,6 @@ require (
 )
 
 require (
-	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
