@@ -316,6 +316,7 @@ type Options struct {
 	Expect       map[tui.Event]string
 	Keymap       map[tui.Event][]*action
 	Preview      previewOpts
+	PreviewN     bool
 	PrintQuery   bool
 	ReadZero     bool
 	Printer      func(string)
@@ -387,6 +388,7 @@ func defaultOptions() *Options {
 		Expect:       make(map[tui.Event]string),
 		Keymap:       make(map[tui.Event][]*action),
 		Preview:      defaultPreviewOpts(""),
+		PreviewN:     false,
 		PrintQuery:   false,
 		ReadZero:     false,
 		Printer:      func(str string) { fmt.Println(str) },
@@ -1823,6 +1825,8 @@ func parseOptions(opts *Options, allArgs []string) {
 			opts.ClearOnExit = false
 		case "--version":
 			opts.Version = true
+		case "--previewn":
+			opts.PreviewN = true
 		case "--":
 			// Ignored
 		default:

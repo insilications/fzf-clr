@@ -22,6 +22,7 @@ import (
 
 	"github.com/junegunn/fzf/src/tui"
 	"github.com/junegunn/fzf/src/util"
+	"github.com/gabriel-vasile/mimetype"
 )
 
 // import "github.com/pkg/profile"
@@ -252,6 +253,7 @@ type Terminal struct {
 	reqBox             *util.EventBox
 	initialPreviewOpts previewOpts
 	previewOpts        previewOpts
+	previewN           bool
 	activePreviewOpts  *previewOpts
 	previewer          previewer
 	previewed          previewed
@@ -667,6 +669,7 @@ func NewTerminal(opts *Options, eventBox *util.EventBox) *Terminal {
 		reqBox:             util.NewEventBox(),
 		initialPreviewOpts: opts.Preview,
 		previewOpts:        opts.Preview,
+		previewN:           opts.PreviewN,
 		previewer:          previewer{0, []string{}, 0, false, true, disabledState, "", []bool{}},
 		previewed:          previewed{0, 0, 0, false},
 		previewBox:         previewBox,
@@ -2400,8 +2403,61 @@ func (t *Terminal) executeCommand(template string, forcePlus bool, background bo
 	if !valid && !capture {
 		return line
 	}
+	mtype, _ := mimetype.DetectFile(list[0].AsString(false))
+	if !strings.Contains(mtype.String(), "image") {
+		return line
+	}
+	// fmt.Println(mtype.String(), mtype.Extension())
 	command := t.replacePlaceholder(template, forcePlus, string(t.input), list)
 	cmd := util.ExecCommand(command, false)
+	cmd.Env = t.environ()
+	t.executing.Set(true)
+	if !background {
+		cmd.Stdin = tui.TtyIn()
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		t.tui.Pause(true)
+		cmd.Run()
+		t.tui.Resume(true, false)
+		t.redraw()
+		t.refresh()
+	} else {
+		if capture {
+			out, _ := cmd.StdoutPipe()
+			reader := bufio.NewReader(out)
+			cmd.Start()
+			if firstLineOnly {
+				line, _ = reader.ReadString('\n')
+				line = strings.TrimRight(line, "\r\n")
+			} else {
+				bytes, _ := io.ReadAll(reader)
+				line = string(bytes)
+			}
+			cmd.Wait()
+		} else {
+			cmd.Run()
+		}
+	}
+	t.executing.Set(false)
+	cleanTemporaryFiles()
+	return line
+}
+
+func (t *Terminal) executeCommandN(template string, forcePlus bool, background bool, capture bool, firstLineOnly bool) string {
+	line := ""
+	valid, list := t.buildPlusList(template, forcePlus)
+	// 'capture' is used for transform-* and we don't want to
+	// return an empty string in those cases
+	if !valid && !capture {
+		return line
+	}
+	mtype, _ := mimetype.DetectFile(list[0].AsString(false))
+	if !strings.Contains(mtype.String(), "image") {
+		return line
+	}
+	// fmt.Println(mtype.String(), mtype.Extension())
+	command := t.replacePlaceholder(template, forcePlus, string(t.input), list)
+	cmd := util.ExecCommand(command, true)
 	cmd.Env = t.environ()
 	t.executing.Set(true)
 	if !background {
@@ -2541,7 +2597,13 @@ func (t *Terminal) killPreview(code int) {
 }
 
 func (t *Terminal) cancelPreview() {
+	// if  !t.previewN {
 	t.killPreview(exitCancel)
+	// }
+	// else {
+	// 	cmd := util.ExecCommand(command, true)
+	// 	cmd.Start()
+	// }
 }
 
 // Loop is called to start Terminal I/O
@@ -2627,6 +2689,28 @@ func (t *Terminal) Loop() {
 		}()
 	}
 
+	// if  t.previewN {
+		// go func() {
+		// t.executeCommand("qview {} &", false, false, false, false)
+			// var items []*Item
+			// t.previewBox.Wait(func(events *util.Events) {
+			// 					for req, value := range *events {
+			// 						switch req {
+			// 						case reqPreviewEnqueue:
+			// 							request := value.(previewRequest)
+			// 							items = request.list
+			// 						}
+			// 					}
+			// 					events.Clear()
+			// 				})
+			// _, query := t.Input()
+			// command := t.replacePlaceholder("qview {} &", false, string(query), items)
+			// cmd := util.ExecCommand(command, true)
+			// env := t.environ()
+			// cmd.Env = env
+			// cmd.Start()
+		// }()
+	// }
 	if t.hasPreviewer() {
 		go func() {
 			var version int64
@@ -2653,7 +2737,12 @@ func (t *Terminal) Loop() {
 				if items[0] != nil {
 					_, query := t.Input()
 					command := t.replacePlaceholder(commandTemplate, false, string(query), items)
+					// var cmd *exec.Cmd
+					// if t.previewN {
+						// cmd = util.ExecCommandN(command, true)
+					// } else {
 					cmd := util.ExecCommand(command, true)
+					// }
 					env := t.environ()
 					if pwindow != nil {
 						height := pwindow.Height()
@@ -2672,6 +2761,7 @@ func (t *Terminal) Loop() {
 					eofChan := make(chan bool)
 					finishChan := make(chan bool, 1)
 					err := cmd.Start()
+					t.executeCommandN("qview {} &", false, true, false, false)
 					if err == nil {
 						reapChan := make(chan bool)
 						lineChan := make(chan eachLine)
@@ -2742,8 +2832,10 @@ func (t *Terminal) Loop() {
 									t.reqBox.Set(reqPreviewDelayed, version)
 								case code := <-t.killChan:
 									if code != exitCancel {
+										// if  !t.previewN {
 										util.KillCommand(cmd)
 										t.eventBox.Set(EvtQuit, code)
+										// }
 									} else {
 										// We can immediately kill a long-running preview program
 										// once we started rendering its partial output
@@ -2789,8 +2881,11 @@ func (t *Terminal) Loop() {
 	refreshPreview := func(command string) {
 		if len(command) > 0 && t.canPreview() {
 			_, list := t.buildPlusList(command, false)
+			// if  !t.previewN {
 			t.cancelPreview()
+			// }
 			t.previewBox.Set(reqPreviewEnqueue, previewRequest{command, t.pwindow, t.evaluateScrollOffset(), list})
+			// }
 		}
 	}
 
