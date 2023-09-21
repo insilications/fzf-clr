@@ -28,6 +28,24 @@ func ExecCommandWith(shell string, command string, setpgid bool) *exec.Cmd {
 	return cmd
 }
 
+// // ExecCommand executes the given command with $SHELL
+// func ExecCommandN(command string, setpgid bool) *exec.Cmd {
+// 	// shell := os.Getenv("SHELL")
+// 	// if len(shell) == 0 {
+// 	// 	shell = "sh"
+// 	// }
+// 	return ExecCommandWithN(command, setpgid)
+// }
+//
+// // ExecCommandWith executes the given command with the specified shell
+// func ExecCommandWithN(command string, setpgid bool) *exec.Cmd {
+// 	cmd := exec.Command("/usr/bin/qview", command)
+// 	if setpgid {
+// 		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+// 	}
+// 	return cmd
+// }
+
 // KillCommand kills the process for the given command
 func KillCommand(cmd *exec.Cmd) error {
 	return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
