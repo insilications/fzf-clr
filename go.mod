@@ -1,23 +1,23 @@
 module github.com/junegunn/fzf
 
 require (
-	github.com/gdamore/tcell/v2 v2.5.4
+	github.com/gabriel-vasile/mimetype v1.4.2
+	github.com/gdamore/tcell/v2 v2.7.0
 	github.com/mattn/go-isatty v0.0.17
-	github.com/mattn/go-runewidth v0.0.14
+	github.com/mattn/go-runewidth v0.0.15
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/rivo/uniseg v0.4.4
 	github.com/saracen/walker v0.1.3
-	golang.org/x/sys v0.12.0
-	golang.org/x/term v0.12.0
+	golang.org/x/sys v0.15.0
+	golang.org/x/term v0.15.0
 )
 
 require (
-	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
-	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/sync v0.1.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 )
 
 go 1.17
