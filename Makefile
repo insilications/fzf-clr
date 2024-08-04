@@ -142,7 +142,7 @@ target/$(BINARY32): $(SOURCES)
 	GOARCH=386 $(GO) build $(BUILD_FLAGS) -o $@
 
 target/$(BINARY64): $(SOURCES)
-	GOARCH=amd64 $(GO) build $(BUILD_FLAGS) -o $@
+	GOARCH=amd64 $(GO) build $(BUILD_FLAGS) -gcflags=all="-l=100" -o $@
 
 target/$(BINARYS390): $(SOURCES)
 	GOARCH=s390x $(GO) build $(BUILD_FLAGS) -o $@
